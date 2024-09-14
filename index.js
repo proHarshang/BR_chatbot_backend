@@ -18,6 +18,7 @@ app.use(cors({
     origin: [
         'https://e-commerce-jesa.onrender.com',
         'https://st-adminpanel.onrender.com',
+        'https://br-chatbot-backend.onrender.com',
         'http://192.168.0.105:3000',
         'http://192.168.0.167:3000',
         'http://localhost:3000',
