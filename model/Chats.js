@@ -26,7 +26,13 @@ const ChatSchema = new Schema({
         adminMsgTime: {
             type: Date,
         }
-    }]
+    }],
+    userDisconnectedAt : {
+        type:Date
+    },
+    adminDisconnectedAt : {
+        type:Date
+    }
 });
 
 exports.Chat = mongoose.model('Chat', ChatSchema)

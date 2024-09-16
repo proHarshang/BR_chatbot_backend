@@ -31,16 +31,33 @@ exports.connectSocket = () => {
             });
 
             // Listen for leaving a chat room
-            socket.on('leaveRoom', (chatRoomId) => {
+            socket.on('leaveRoom', async (chatRoomId, role) => {
                 socket.leave(chatRoomId);
                 console.log(`User ${socket.id} left room ${chatRoomId}`);
+
+                // Save disconnection time based on role (admin or user)
+                const disconnectionTime = new Date();
+                try {
+                    const chatRoom = await Chat.findOne({ chatRoomId });
+
+                    if (chatRoom) {
+                        if (role === 'admin') {
+                            chatRoom.adminDisconnectedAt = disconnectionTime;
+                        } else if (role === 'user') {
+                            chatRoom.userDisconnectedAt = disconnectionTime;
+                        }
+                        await chatRoom.save();
+                        console.log(`Disconnection time for ${role} saved: ${disconnectionTime}`);
+                    }
+                } catch (error) {
+                    console.error(`Error saving disconnection time for ${role}:`, error);
+                }
             });
 
             // Handle user message
             socket.on('userMessage', async ({ chatRoomId, message }) => {
                 ioInstance.to(chatRoomId).emit('newMessage', message);
 
-                // Save the user message to the database
                 const userMsg = message.text;
                 const userMsgTime = new Date();
 
@@ -89,16 +106,42 @@ exports.connectSocket = () => {
                 }
             });
 
-            // Handle disconnect
-            socket.on('disconnect', () => {
+            // Handle disconnect (when the user disconnects from the server)
+            socket.on('disconnect', async () => {
                 console.log('User disconnected:', socket.id);
+
+                const disconnectionTime = new Date();
+                try {
+                    const chatRoom = await Chat.findOne({
+                        $or: [
+                            { 'userMsgData.userId': socket.id },
+                            { 'adminMsgData.adminId': `admin_${socket.id}` }
+                        ]
+                    });
+
+                    if (chatRoom) {
+                        const isAdmin = chatRoom.adminMsgData.some(admin => admin.adminId === `admin_${socket.id}`);
+                        const isUser = chatRoom.userMsgData.some(user => user.userId === socket.id);
+
+                        if (isAdmin) {
+                            chatRoom.adminDisconnectedAt = disconnectionTime;
+                        } else if (isUser) {
+                            chatRoom.userDisconnectedAt = disconnectionTime;
+                        }
+
+                        await chatRoom.save();
+                        console.log(`Disconnection time saved for ${isAdmin ? 'admin' : 'user'}: ${disconnectionTime}`);
+                    }
+                } catch (error) {
+                    console.error('Error saving disconnection time:', error);
+                }
             });
         });
-
     } catch (error) {
         console.error("Something went wrong while connecting to socket:", error);
     }
 };
+
 
 exports.startChat = (req, res) => {
     try {
@@ -191,7 +234,7 @@ exports.fetchChatRoomById = async (req, res) => {
         const { chatRoomId } = req.params; // Get the chat room ID from the request params
 
         // Fetch the chat room by its ID
-        const chatRoom = await Chat.findById(chatRoomId);
+        const chatRoom = await Chat.findOne({chatRoomId:chatRoomId});
 
         // Check if chat room exists
         if (!chatRoom) {
