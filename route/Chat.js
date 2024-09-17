@@ -12,7 +12,7 @@ router.post('/start-chat', startChat)// Route to start a new chat room
     .get('/fetch-chat-rooms',isAdmin,fetchAllChatRooms)
     .get('/fetch-chat-rooms/:chatRoomId',isAdmin,fetchChatRoomById)
     .delete('/delete',isAdmin,deleteAllChat)
-    .post('/:chatRoomId',isAdmin,connectSocket)
+    .post('/:chatRoomId',connectSocket)
 
 
 
