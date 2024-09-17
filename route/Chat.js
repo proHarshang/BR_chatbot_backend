@@ -7,7 +7,7 @@ const router = express.Router();
 
 
 
-router.post('/start-chat',isValid, startChat)// Route to start a new chat room
+router.post('/start-chat', startChat)// Route to start a new chat room
     .post('/receive-msg/:chatRoomId',isAdmin, fetchChat)
     .get('/fetch-chat-rooms',isAdmin,fetchAllChatRooms)
     .get('/fetch-chat-rooms/:chatRoomId',isAdmin,fetchChatRoomById)
